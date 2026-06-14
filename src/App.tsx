@@ -6,9 +6,11 @@ import EventsPage from "./pages/EventsPage";
 import UsersPage from "./pages/UsersPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./auth/AuthContext";
+import { useTheme } from "./theme/useTheme";
 
 function App() {
   const { user, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showLogin, setShowLogin] = useState(false);
 
   return (
@@ -16,6 +18,8 @@ function App() {
       <Navbar
         user={user}
         isAdmin={isAdmin}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onLoginClick={() => setShowLogin(true)}
         onLogout={logout}
       />

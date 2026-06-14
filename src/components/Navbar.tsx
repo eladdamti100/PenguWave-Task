@@ -1,47 +1,71 @@
 import { Link, useLocation } from "react-router-dom";
 import type { User } from "../types";
+import type { Theme } from "../theme/useTheme";
 
 interface NavbarProps {
   user: User | null;
   isAdmin: boolean;
+  theme: Theme;
+  onToggleTheme: () => void;
   onLoginClick: () => void;
   onLogout: () => void;
 }
 
-export default function Navbar({ user, isAdmin, onLoginClick, onLogout }: NavbarProps) {
+function initials(email: string): string {
+  return email.slice(0, 2).toUpperCase();
+}
+
+export default function Navbar({ user, isAdmin, theme, onToggleTheme, onLoginClick, onLogout }: NavbarProps) {
   const location = useLocation();
 
   return (
     <nav className="navbar">
-      <div className="navbar-brand">
-        <Link to="/events" style={{ textDecoration: "none", color: "inherit" }}>
-          PenguWave 🐧
+      <div className="navbar-left">
+        <Link to="/events" className="navbar-brand">
+          <span className="brand-mark">🐧</span>
+          <span className="brand-name">
+            PenguWave <span className="brand-sub">SOC</span>
+          </span>
         </Link>
-      </div>
-      <div className="navbar-links">
         {user && (
-          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
-            Events
-          </Link>
+          <div className="nav-tabs">
+            <Link to="/events" className={`nav-tab ${location.pathname.startsWith("/events") ? "active" : ""}`}>
+              Events
+            </Link>
+            {isAdmin && (
+              <Link to="/users" className={`nav-tab ${location.pathname === "/users" ? "active" : ""}`}>
+                Users
+              </Link>
+            )}
+          </div>
         )}
-        {/* Users link only appears for admins. */}
-        {user && isAdmin && (
-          <Link to="/users" className={location.pathname === "/users" ? "active" : ""}>
-            Users
-          </Link>
-        )}
+      </div>
+
+      <div className="navbar-right">
+        <button
+          className="icon-btn"
+          onClick={onToggleTheme}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
         {user ? (
-          <>
-            <span className="navbar-user" title={`Role: ${user.role}`}>
-              {user.email} <span className="role-tag">{user.role}</span>
+          <div className="user-chip">
+            <span className="avatar" aria-hidden="true">
+              {initials(user.email)}
             </span>
-            <button onClick={onLogout} className="navbar-login-btn">
+            <span className="user-meta">
+              <span className="user-email">{user.email}</span>
+              <span className="role-tag">{user.role}</span>
+            </span>
+            <button onClick={onLogout} className="btn-ghost">
               Logout
             </button>
-          </>
+          </div>
         ) : (
-          <button onClick={onLoginClick} className="navbar-login-btn">
-            Login
+          <button onClick={onLoginClick} className="btn-primary sm">
+            Sign In
           </button>
         )}
       </div>
