@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import type { Severity } from "../types";
 import {
   SEVERITY_ORDER,
@@ -7,6 +8,9 @@ import {
   eventsByDay,
   type NormalizedEvent,
 } from "../lib/events";
+
+// Code-split the 3D globe so it never blocks the rest of the dashboard.
+const ThreatGlobe = lazy(() => import("./ThreatGlobe"));
 
 interface OverviewProps {
   events: NormalizedEvent[];
@@ -25,6 +29,12 @@ export default function Overview({ events, onSelectSeverity, onSelectTag }: Over
 
   return (
     <section className="overview" aria-label="Events overview">
+      {events.length > 0 && (
+        <Suspense fallback={<div className="globe-card globe-loading">Initializing threat map…</div>}>
+          <ThreatGlobe events={events} />
+        </Suspense>
+      )}
+
       <div className="kpi-row">
         {SEVERITY_ORDER.map((sev) => (
           <button
