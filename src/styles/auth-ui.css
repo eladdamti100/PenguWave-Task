@@ -119,9 +119,8 @@
 /* demo credential quick-fill */
 .vb-demo { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
 .vb-demo-label { font-size: 11px; color: var(--muted); font-weight: 600; }
-.vb-demo-card { display: flex; align-items: center; gap: 6px; }
 .vb-demo-fill {
-  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 7px 11px;
+  width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 7px 11px;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--vb-radius-sm);
   cursor: pointer; text-align: left; transition: border-color 0.16s ease, background 0.16s ease;
 }

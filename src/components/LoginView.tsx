@@ -12,22 +12,11 @@ export default function LoginView() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState("");
 
   const fillCredentials = (demoEmail: string, demoPassword: string): void => {
     setEmail(demoEmail);
     setPassword(demoPassword);
     setError("");
-  };
-
-  const copyValue = async (value: string, key: string): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(key);
-      window.setTimeout(() => setCopied(""), 1200);
-    } catch {
-      /* clipboard unavailable — ignore */
-    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -118,39 +107,20 @@ export default function LoginView() {
         </button>
 
         <div className="vb-demo">
-          <span className="vb-demo-label">Demo accounts — click to fill, or copy:</span>
+          <span className="vb-demo-label">Demo accounts — click to fill:</span>
           {DEMO_LOGINS.map((d) => (
-            <div className="vb-demo-card" key={d.email}>
-              <button
-                type="button"
-                className="vb-demo-fill"
-                onClick={() => fillCredentials(d.email, d.password)}
-                title="Fill the form with these credentials"
-              >
-                <span className="vb-demo-role">{d.label}</span>
-                <span className="vb-demo-creds mono">
-                  {d.email} · {d.password}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="vb-icon-btn"
-                aria-label={`Copy ${d.label} email`}
-                title="Copy email"
-                onClick={() => copyValue(d.email, `${d.email}-email`)}
-              >
-                {copied === `${d.email}-email` ? "✓" : "✉"}
-              </button>
-              <button
-                type="button"
-                className="vb-icon-btn"
-                aria-label={`Copy ${d.label} password`}
-                title="Copy password"
-                onClick={() => copyValue(d.password, `${d.email}-pw`)}
-              >
-                {copied === `${d.email}-pw` ? "✓" : "🔑"}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="vb-demo-fill"
+              key={d.email}
+              onClick={() => fillCredentials(d.email, d.password)}
+              title="Fill the form with these credentials"
+            >
+              <span className="vb-demo-role">{d.label}</span>
+              <span className="vb-demo-creds mono">
+                {d.email} · {d.password}
+              </span>
+            </button>
           ))}
         </div>
       </form>
