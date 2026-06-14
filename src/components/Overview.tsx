@@ -124,7 +124,9 @@ function PostureBanner({
     return (
       <div className="posture posture-critical">
         <span className="posture-pulse" aria-hidden="true" />
-        <strong>{openCritical} critical event{openCritical > 1 ? "s" : ""} need attention</strong>
+        <strong>
+          {openCritical} critical event{openCritical > 1 ? "s" : ""} need{openCritical > 1 ? "" : "s"} attention
+        </strong>
         <span className="muted">Immediate triage required</span>
         <button className="btn-primary sm" onClick={() => onSelectSeverity("CRITICAL")}>
           Triage now →
@@ -136,7 +138,9 @@ function PostureBanner({
     return (
       <div className="posture posture-high">
         <span className="posture-pulse" aria-hidden="true" />
-        <strong>{openHigh} high-severity event{openHigh > 1 ? "s" : ""} open</strong>
+        <strong>
+          {openHigh} high-severity event{openHigh > 1 ? "s are" : " is"} open
+        </strong>
         <span className="muted">Review when able</span>
         <button className="btn-primary sm" onClick={() => onSelectSeverity("HIGH")}>
           Review →
