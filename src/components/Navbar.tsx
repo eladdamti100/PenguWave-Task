@@ -7,7 +7,6 @@ interface NavbarProps {
   isAdmin: boolean;
   theme: Theme;
   onToggleTheme: () => void;
-  onLoginClick: () => void;
   onLogout: () => void;
 }
 
@@ -15,7 +14,7 @@ function initials(email: string): string {
   return email.slice(0, 2).toUpperCase();
 }
 
-export default function Navbar({ user, isAdmin, theme, onToggleTheme, onLoginClick, onLogout }: NavbarProps) {
+export default function Navbar({ user, isAdmin, theme, onToggleTheme, onLogout }: NavbarProps) {
   const location = useLocation();
 
   return (
@@ -50,7 +49,7 @@ export default function Navbar({ user, isAdmin, theme, onToggleTheme, onLoginCli
         >
           {theme === "dark" ? "☀️" : "🌙"}
         </button>
-        {user ? (
+        {user && (
           <div className="user-chip">
             <span className="avatar" aria-hidden="true">
               {initials(user.email)}
@@ -63,10 +62,6 @@ export default function Navbar({ user, isAdmin, theme, onToggleTheme, onLoginCli
               Logout
             </button>
           </div>
-        ) : (
-          <button onClick={onLoginClick} className="btn-primary sm">
-            Sign In
-          </button>
         )}
       </div>
     </nav>

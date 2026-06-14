@@ -25,6 +25,13 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
 /** The demo credentials, surfaced in the login modal as a convenience hint. */
 export const DEMO_HINT = "admin@penguwave.io / admin123";
 
+/** Active demo accounts offered as one-click "fill" buttons on the login screen. */
+export const DEMO_LOGINS = DEMO_ACCOUNTS.filter((a) => a.status === "active").map((a) => ({
+  label: a.role,
+  email: a.email,
+  password: a.password,
+}));
+
 export interface MockLoginResult {
   token: string;
   user: User;

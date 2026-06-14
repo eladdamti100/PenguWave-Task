@@ -1,163 +1,229 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import type { User } from "../types";
+import "../styles/auth-ui.css";
 
-// Seed list mirrors the public fields of the demo accounts — note there are no
-// passwords here. Passwords are never sent to or stored in the client.
+const ROLES = ["admin", "analyst", "viewer"] as const;
+
+// Seed list carries only public fields — no passwords are ever stored client-side.
 const SEED_USERS: User[] = [
   { id: "usr-001", email: "admin@penguwave.io", role: "admin", status: "active" },
   { id: "usr-002", email: "analyst@penguwave.io", role: "analyst", status: "active" },
   { id: "usr-003", email: "viewer@penguwave.io", role: "viewer", status: "disabled" },
 ];
 
+const AVATAR_GRADIENTS = [
+  "linear-gradient(135deg, #6366f1, #a855f7)",
+  "linear-gradient(135deg, #0ea5e9, #6366f1)",
+  "linear-gradient(135deg, #ec4899, #8b5cf6)",
+  "linear-gradient(135deg, #14b8a6, #6366f1)",
+  "linear-gradient(135deg, #f59e0b, #ef4444)",
+  "linear-gradient(135deg, #8b5cf6, #06b6d4)",
+];
+
+function gradientFor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+}
+
+function initials(email: string): string {
+  const name = email.split("@")[0] ?? email;
+  const parts = name.split(/[.\-_]/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface AddUserModalProps {
+  existingEmails: string[];
+  onClose: () => void;
+  onCreate: (user: Omit<User, "id">) => void;
+}
+
+function AddUserModal({ existingEmails, onClose, onCreate }: AddUserModalProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<string>("viewer");
+  const [error, setError] = useState("");
+
+  const handleCreate = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !password.trim()) {
+      setError("Email and password are both required.");
+      return;
+    }
+    if (!EMAIL_RE.test(trimmed)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (existingEmails.some((e2) => e2.toLowerCase() === trimmed)) {
+      setError("A user with that email already exists.");
+      return;
+    }
+    // Password is captured to create the account (a real backend would hash it)
+    // but never stored in client state or rendered.
+    onCreate({ email: trimmed, role, status: "active" });
+  };
+
+  return (
+    <div
+      className="vb-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-user-title"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <form className="vb-modal" onSubmit={handleCreate} onKeyDown={(e) => e.key === "Escape" && onClose()} noValidate>
+        <div className="vb-modal-head">
+          <div>
+            <div className="vb-modal-title" id="add-user-title">Add user</div>
+            <div className="vb-modal-sub">Invite a teammate to the workspace</div>
+          </div>
+          <button className="vb-icon-btn" type="button" aria-label="Close dialog" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="vb-field">
+          <label className="vb-label" htmlFor="add-email">Email</label>
+          <input
+            id="add-email"
+            className={`vb-input${error && !email.trim() ? " vb-input-error" : ""}`}
+            type="email"
+            placeholder="teammate@penguwave.io"
+            value={email}
+            autoFocus
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="vb-field">
+          <label className="vb-label" htmlFor="add-password">Password</label>
+          <input
+            id="add-password"
+            className={`vb-input${error && !password.trim() ? " vb-input-error" : ""}`}
+            type="password"
+            autoComplete="new-password"
+            placeholder="Temporary password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <div className="vb-field">
+          <span className="vb-label" id="role-label">Role</span>
+          <div className="vb-segment" role="group" aria-labelledby="role-label">
+            {ROLES.map((r) => (
+              <button key={r} type="button" className="vb-segment-btn" aria-pressed={role === r} onClick={() => setRole(r)}>
+                {r.charAt(0).toUpperCase() + r.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error ? (
+          <div className="vb-error" role="alert">
+            <span aria-hidden="true">⚠</span> {error}
+          </div>
+        ) : null}
+
+        <div className="vb-modal-actions">
+          <button className="vb-btn vb-btn-ghost" type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="vb-btn vb-btn-primary" type="submit">
+            Create user
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>(SEED_USERS);
-  const [showForm, setShowForm] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState("analyst");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newId, setNewId] = useState("");
 
-  const openForm = () => {
-    setNewEmail("");
-    setNewPassword("");
-    setNewRole("analyst");
-    setFormError(null);
-    setShowForm(true);
-  };
-  const closeForm = () => setShowForm(false);
-
-  const handleAddUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-
-    const email = newEmail.trim();
-    if (!email || !newPassword) {
-      setFormError("Email and password are required.");
-      return;
-    }
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      setFormError("A user with that email already exists.");
-      return;
-    }
-
-    // The password is sent to create the account (in a real app, to the backend
-    // which hashes it) but is never stored in client state or rendered.
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      email,
-      role: newRole,
-      status: "active",
-    };
-    setUsers((prev) => [...prev, newUser]);
-    setNewEmail("");
-    setNewPassword("");
-    setNewRole("analyst");
-    setShowForm(false);
+  const addUser = (draft: Omit<User, "id">): void => {
+    const id = `usr-${Date.now().toString(36)}`;
+    setUsers((prev) => [{ id, ...draft }, ...prev]);
+    setNewId(id);
+    setModalOpen(false);
+    window.setTimeout(() => setNewId(""), 1900);
   };
 
-  const handleDelete = (user: User) => {
+  const toggleStatus = (id: string): void => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status: u.status === "active" ? "disabled" : "active" } : u))
+    );
+  };
+
+  const removeUser = (user: User): void => {
     if (!window.confirm(`Delete ${user.email}? This cannot be undone.`)) return;
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
   };
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1>User Management</h1>
-          <p className="muted">{users.length} user{users.length === 1 ? "" : "s"} · manage roles and access</p>
-        </div>
-        <button className="btn-primary" onClick={openForm}>
-          + Add User
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="modal-backdrop" onClick={closeForm}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={closeForm} aria-label="Close">
-              ✕
-            </button>
-            <h2>New User</h2>
-            <p className="muted" style={{ marginBottom: 20, fontSize: 13 }}>
-              Create an account and assign a role.
-            </p>
-            <form onSubmit={handleAddUser}>
-              <div className="form-field">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="user@penguwave.io"
-                  autoFocus
-                  required
-                />
-              </div>
-              <div className="form-field">
-                <label>Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              <div className="form-field">
-                <label>Role</label>
-                <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
-                  <option value="admin">Admin</option>
-                  <option value="analyst">Analyst</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-              </div>
-              {formError && <div className="banner banner-error" style={{ marginBottom: 14 }}>{formError}</div>}
-              <div className="modal-actions">
-                <button type="button" className="btn-ghost" onClick={closeForm}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary">
-                  Create User
-                </button>
-              </div>
-            </form>
+      <section className="vb-section">
+        <div className="vb-section-head">
+          <div>
+            <h1>User Management</h1>
+            <p className="muted">{users.length} user{users.length === 1 ? "" : "s"} · manage roles and access</p>
           </div>
+          <button className="vb-btn vb-btn-primary vb-btn-sm" type="button" onClick={() => setModalOpen(true)}>
+            <span aria-hidden="true">＋</span> Add user
+          </button>
         </div>
-      )}
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>
-                  <span className={`status-dot ${user.status === "active" ? "ok" : "off"}`} />
-                  {user.status}
-                </td>
-                <td>
-                  <button className="link-btn danger" onClick={() => handleDelete(user)}>
-                    Delete
+        <div className="vb-card vb-user-list">
+          {users.length === 0 ? (
+            <div className="vb-empty">No users yet. Add your first teammate.</div>
+          ) : (
+            users.map((u) => (
+              <div key={u.id} className={`vb-user-row${u.id === newId ? " vb-row-new" : ""}`}>
+                <div className="vb-avatar" style={{ background: gradientFor(u.email) }} aria-hidden="true">
+                  {initials(u.email)}
+                </div>
+                <div className="vb-user-meta">
+                  <span className="vb-user-email">{u.email}</span>
+                  <span className="vb-user-id">{u.id}</span>
+                </div>
+                <span className="vb-role">{u.role}</span>
+                <span className={`vb-pill vb-pill-${u.status === "active" ? "active" : "disabled"}`}>{u.status}</span>
+                <div className="vb-row-actions">
+                  <button
+                    className="vb-icon-btn"
+                    type="button"
+                    aria-label={u.status === "active" ? `Disable ${u.email}` : `Enable ${u.email}`}
+                    title={u.status === "active" ? "Disable" : "Enable"}
+                    onClick={() => toggleStatus(u.id)}
+                  >
+                    {u.status === "active" ? "⏸" : "▶"}
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <button
+                    className="vb-icon-btn vb-icon-danger"
+                    type="button"
+                    aria-label={`Remove ${u.email}`}
+                    title="Remove"
+                    onClick={() => removeUser(u)}
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
-      {users.length === 0 && <p className="muted">No users.</p>}
+      {modalOpen ? (
+        <AddUserModal existingEmails={users.map((u) => u.email)} onClose={() => setModalOpen(false)} onCreate={addUser} />
+      ) : null}
     </div>
   );
 }

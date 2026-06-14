@@ -1,0 +1,203 @@
+/* ============================================================
+   PenguWave — Auth & User Management UI ("Premium SaaS")
+   Adapted from the design-lab Variant B. Theme-aware via app vars.
+   Class prefix: .vb-
+   ============================================================ */
+
+:root {
+  --vb-radius: 16px;
+  --vb-radius-sm: 10px;
+  --vb-grad: linear-gradient(135deg, var(--accent), #a855f7);
+  --vb-glass: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+[class^="vb-"],
+[class*=" vb-"],
+[class^="vb-"]::before,
+[class*=" vb-"]::before,
+[class^="vb-"]::after,
+[class*=" vb-"]::after {
+  box-sizing: border-box;
+}
+
+/* ---- section scaffolding ---- */
+.vb-section { display: flex; flex-direction: column; gap: 14px; }
+.vb-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.vb-section-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+
+.vb-card {
+  position: relative; background: var(--vb-glass);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--vb-radius);
+  box-shadow: var(--shadow-md); overflow: hidden;
+}
+
+/* ============================================================ 1. LOGIN */
+.vb-login {
+  position: relative; display: grid; place-items: center; min-height: calc(100vh - 120px);
+  padding: 40px 20px; border-radius: var(--vb-radius); overflow: hidden; isolation: isolate;
+}
+.vb-login::before,
+.vb-login::after {
+  content: ""; position: absolute; z-index: -1; width: 340px; height: 340px;
+  border-radius: 50%; filter: blur(72px); opacity: 0.5; animation: vb-float 14s ease-in-out infinite;
+}
+.vb-login::before { background: var(--accent); top: -90px; left: -60px; }
+.vb-login::after { background: #a855f7; bottom: -110px; right: -50px; animation-delay: -7s; }
+
+.vb-login-card {
+  width: 100%; max-width: 400px; padding: 32px 30px; background: var(--vb-glass);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  border: 1px solid var(--border-strong); border-radius: var(--vb-radius);
+  box-shadow: var(--shadow-lg); animation: vb-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vb-login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.vb-logo {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  background: var(--vb-grad); color: #fff; font-size: 18px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.vb-login-headings { display: flex; flex-direction: column; }
+.vb-login-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.vb-login-sub { font-size: 12.5px; color: var(--muted); }
+
+/* ---- fields ---- */
+.vb-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.vb-label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.vb-input {
+  width: 100%; padding: 11px 13px; font-size: 14px; color: var(--text); background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: var(--vb-radius-sm); outline: none; margin: 0;
+  transition: border-color 0.18s ease, box-shadow 0.22s ease, transform 0.18s ease;
+}
+.vb-input::placeholder { color: var(--muted); opacity: 0.7; }
+.vb-input:hover { border-color: var(--border-strong); }
+.vb-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); transform: translateY(-1px); }
+.vb-input.vb-input-error { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 16%, transparent); }
+
+.vb-error {
+  display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
+  color: var(--danger); animation: vb-shake 0.34s ease;
+}
+
+/* ---- buttons ---- */
+.vb-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px;
+  font-size: 13.5px; font-weight: 600; font-family: inherit; border-radius: var(--vb-radius-sm);
+  border: 1px solid transparent; cursor: pointer; user-select: none;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+.vb-btn:active { transform: translateY(1px) scale(0.99); }
+.vb-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
+.vb-btn-primary { color: var(--on-accent); background: var(--vb-grad); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent); }
+.vb-btn-primary:hover { box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 50%, transparent); transform: translateY(-1px); }
+.vb-btn-primary[disabled] { cursor: not-allowed; opacity: 0.7; transform: none; box-shadow: none; }
+.vb-btn-ghost { color: var(--text); background: var(--surface); border-color: var(--border); }
+.vb-btn-ghost:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.vb-btn-block { width: 100%; margin-top: 6px; }
+.vb-btn-sm { padding: 7px 12px; font-size: 12.5px; }
+
+.vb-icon-btn {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.16s ease;
+}
+.vb-icon-btn:hover { background: var(--surface-2); color: var(--text); transform: translateY(-1px); }
+.vb-icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--accent-soft); }
+.vb-icon-btn.vb-icon-danger:hover { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+
+.vb-spinner {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 45%, transparent);
+  border-top-color: var(--on-accent); animation: vb-spin 0.7s linear infinite;
+}
+
+/* divider + guest */
+.vb-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--muted); font-size: 11.5px; }
+.vb-divider::before, .vb-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.vb-hint { margin-top: 16px; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+/* demo credential quick-fill */
+.vb-demo { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.vb-demo-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.vb-demo-card { display: flex; align-items: center; gap: 6px; }
+.vb-demo-fill {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 7px 11px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--vb-radius-sm);
+  cursor: pointer; text-align: left; transition: border-color 0.16s ease, background 0.16s ease;
+}
+.vb-demo-fill:hover { border-color: var(--accent); background: var(--accent-soft); }
+.vb-demo-role { font-size: 11px; font-weight: 700; text-transform: capitalize; color: var(--accent-text); }
+.vb-demo-creds { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================ 2. USER MANAGEMENT */
+.vb-user-list { display: flex; flex-direction: column; }
+.vb-user-row {
+  display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 14px;
+  padding: 14px 18px; border-bottom: 1px solid var(--border); transition: background 0.18s ease;
+}
+.vb-user-row:last-child { border-bottom: none; }
+.vb-user-row:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.vb-user-row.vb-row-new { animation: vb-highlight 1.8s ease both; }
+.vb-avatar {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; font-size: 14px;
+  font-weight: 700; color: #fff; letter-spacing: 0.02em; box-shadow: var(--shadow-sm);
+}
+.vb-user-meta { display: flex; flex-direction: column; min-width: 0; }
+.vb-user-email { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vb-user-id { font-size: 11.5px; color: var(--muted); }
+.vb-role { font-size: 12px; font-weight: 600; color: var(--accent-text); text-transform: capitalize; }
+
+.vb-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11.5px;
+  font-weight: 600; border-radius: 999px; border: 1px solid transparent; text-transform: capitalize;
+}
+.vb-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.vb-pill-active { color: var(--ok); background: color-mix(in srgb, var(--ok) 13%, transparent); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.vb-pill-disabled { color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); border-color: color-mix(in srgb, var(--muted) 26%, transparent); }
+.vb-row-actions { display: flex; gap: 8px; }
+.vb-empty { padding: 28px; text-align: center; font-size: 13px; color: var(--muted); }
+
+/* ============================================================ 3. ADD USER MODAL */
+.vb-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px;
+  background: color-mix(in srgb, #0a0e16 55%, transparent);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: vb-fade 0.2s ease both;
+}
+.vb-modal {
+  width: 100%; max-width: 420px; padding: 26px 26px 24px; background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: var(--vb-radius); box-shadow: var(--shadow-lg);
+  animation: vb-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.vb-modal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.vb-modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.vb-modal-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+.vb-segment {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--vb-radius-sm);
+}
+.vb-segment-btn {
+  padding: 8px 10px; font-size: 13px; font-weight: 600; font-family: inherit; color: var(--muted);
+  background: transparent; border: none; border-radius: 7px; cursor: pointer;
+  transition: color 0.18s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.vb-segment-btn:hover { color: var(--text); }
+.vb-segment-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.vb-segment-btn[aria-pressed="true"] { color: var(--accent-text); background: var(--surface); box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--border-strong); }
+
+.vb-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+/* ============================================================ keyframes */
+@keyframes vb-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes vb-pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes vb-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vb-spin { to { transform: rotate(360deg); } }
+@keyframes vb-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(24px, 18px); } }
+@keyframes vb-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes vb-highlight { 0% { background: var(--accent-soft); } 100% { background: transparent; } }
+
+@media (prefers-reduced-motion: reduce) {
+  [class^="vb-"], [class*=" vb-"], [class^="vb-"]::before, [class*=" vb-"]::before, [class^="vb-"]::after, [class*=" vb-"]::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important;
+  }
+}

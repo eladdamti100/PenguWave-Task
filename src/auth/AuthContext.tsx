@@ -6,8 +6,13 @@ interface AuthContextValue {
   user: User | null;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => void;
 }
+
+// Read-only guest session. Maps to the lowest-privilege role (viewer), so a
+// guest can browse the events dashboard but never reach admin-only surfaces.
+const GUEST_USER: User = { id: "guest", email: "guest@penguwave.io", role: "viewer", status: "active" };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -38,14 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authedUser);
   }, []);
 
+  const loginAsGuest = useCallback(() => {
+    localStorage.setItem("token", "guest");
+    setUser(GUEST_USER);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("token");
     setUser(null);
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAdmin: user?.role === "admin", login, logout }),
-    [user, login, logout]
+    () => ({ user, isAdmin: user?.role === "admin", login, loginAsGuest, logout }),
+    [user, login, loginAsGuest, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
