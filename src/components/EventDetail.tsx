@@ -1,13 +1,17 @@
 import { formatTimestamp, type NormalizedEvent } from "../lib/events";
+import { TRIAGE_LABEL, type TriageStatus } from "../hooks/useTriage";
 import SeverityBadge from "./SeverityBadge";
+import "../styles/auth-ui.css";
 
 interface EventDetailProps {
   event: NormalizedEvent;
+  status: TriageStatus;
+  onSetStatus: (status: TriageStatus) => void;
   onClose: () => void;
 }
 
 /** Slide-over panel with the full details of a single event. */
-export default function EventDetail({ event, onClose }: EventDetailProps) {
+export default function EventDetail({ event, status, onSetStatus, onClose }: EventDetailProps) {
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
@@ -21,6 +25,31 @@ export default function EventDetail({ event, onClose }: EventDetailProps) {
             ✕
           </button>
         </header>
+
+        <div className="triage-bar">
+          <span className={`triage-chip triage-${status}`}>{TRIAGE_LABEL[status]}</span>
+          <div className="triage-bar-actions">
+            <button
+              className="vb-btn vb-btn-ghost vb-btn-sm"
+              disabled={status === "ack"}
+              onClick={() => onSetStatus("ack")}
+            >
+              Acknowledge
+            </button>
+            <button
+              className="vb-btn vb-btn-ghost vb-btn-sm"
+              disabled={status === "resolved"}
+              onClick={() => onSetStatus("resolved")}
+            >
+              Resolve
+            </button>
+            {status !== "new" && (
+              <button className="vb-btn vb-btn-ghost vb-btn-sm" onClick={() => onSetStatus("new")}>
+                Reopen
+              </button>
+            )}
+          </div>
+        </div>
 
         <dl className="detail-grid">
           <dt>Event ID</dt>

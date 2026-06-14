@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Severity } from "../types";
 import { useEvents } from "../hooks/useEvents";
+import { useTriage, type TriageStatus, TRIAGE_LABEL } from "../hooks/useTriage";
 import {
   SEVERITY_ORDER,
   compareSeverity,
@@ -14,6 +15,7 @@ import SeverityBadge from "../components/SeverityBadge";
 
 type SortKey = "timestamp" | "severity" | "title" | "assetHostname";
 type SortDir = "asc" | "desc";
+type StatusFilter = TriageStatus | "ALL";
 
 const ALL_SEVERITIES = new Set<Severity>(SEVERITY_ORDER);
 
@@ -32,18 +34,22 @@ const CSV_COLUMNS: CsvColumn<NormalizedEvent>[] = [
 
 export default function EventsPage() {
   const { events, loading, error } = useEvents();
+  const triage = useTriage(events);
 
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState<Set<Severity>>(ALL_SEVERITIES);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("timestamp");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<NormalizedEvent | null>(null);
 
+  const { statusOf } = triage;
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const result = events.filter((e) => {
       if (!severityFilter.has(e.severity)) return false;
+      if (statusFilter !== "ALL" && statusOf(e) !== statusFilter) return false;
       if (tagFilter && !e.tags.includes(tagFilter)) return false;
       if (!q) return true;
       // Null-safe: every searched field is a guaranteed string on NormalizedEvent.
@@ -79,7 +85,7 @@ export default function EventsPage() {
       }
       return cmp * dir;
     });
-  }, [events, search, severityFilter, tagFilter, sortKey, sortDir]);
+  }, [events, search, severityFilter, statusFilter, statusOf, tagFilter, sortKey, sortDir]);
 
   const toggleSeverity = (sev: Severity) => {
     setSeverityFilter((prev) => {
@@ -111,17 +117,18 @@ export default function EventsPage() {
   };
 
   const hasActiveFilters =
-    search.trim() !== "" || tagFilter !== null || severityFilter.size !== SEVERITY_ORDER.length;
+    search.trim() !== "" || tagFilter !== null || statusFilter !== "ALL" || severityFilter.size !== SEVERITY_ORDER.length;
   const clearFilters = () => {
     setSearch("");
     setTagFilter(null);
+    setStatusFilter("ALL");
     setSeverityFilter(new Set(ALL_SEVERITIES));
   };
 
   if (loading) {
     return (
       <div className="page-container">
-        <h1>Security Events</h1>
+        <h1>Security Operations</h1>
         <p className="muted">Loading events…</p>
       </div>
     );
@@ -130,7 +137,7 @@ export default function EventsPage() {
   if (error) {
     return (
       <div className="page-container">
-        <h1>Security Events</h1>
+        <h1>Security Operations</h1>
         <div className="banner banner-error">{error}</div>
       </div>
     );
@@ -138,14 +145,19 @@ export default function EventsPage() {
 
   return (
     <div className="page-container">
-      <h1>Security Events</h1>
+      <h1>Security Operations</h1>
 
       <Overview
         events={events}
+        triage={triage}
         onSelectSeverity={(sev) => setSeverityFilter(new Set([sev]))}
+        onSelectStatus={(s) => setStatusFilter(s)}
         onSelectTag={(tag) => setTagFilter(tag)}
+        onSelectIp={(ip) => setSearch(ip)}
+        onOpenEvent={(e) => setSelected(e)}
       />
 
+      <h2 className="section-title">Event stream</h2>
       <div className="toolbar">
         <input
           type="text"
@@ -167,6 +179,17 @@ export default function EventsPage() {
             </button>
           ))}
         </div>
+        <select
+          className="status-select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          aria-label="Filter by triage status"
+        >
+          <option value="ALL">All statuses</option>
+          <option value="new">New</option>
+          <option value="ack">Acknowledged</option>
+          <option value="resolved">Resolved</option>
+        </select>
         <div className="toolbar-actions">
           <button onClick={exportCsv} disabled={filtered.length === 0}>
             Export CSV
@@ -184,6 +207,11 @@ export default function EventsPage() {
         {tagFilter && (
           <button className="filter-pill" onClick={() => setTagFilter(null)}>
             tag: {tagFilter} ✕
+          </button>
+        )}
+        {statusFilter !== "ALL" && (
+          <button className="filter-pill" onClick={() => setStatusFilter("ALL")}>
+            {TRIAGE_LABEL[statusFilter]} ✕
           </button>
         )}
         {hasActiveFilters && (
@@ -210,6 +238,7 @@ export default function EventsPage() {
                 <th className="sortable" onClick={() => sortBy("severity")}>
                   Severity{sortIndicator("severity")}
                 </th>
+                <th>Status</th>
                 <th className="sortable" onClick={() => sortBy("title")}>
                   Title{sortIndicator("title")}
                 </th>
@@ -223,34 +252,47 @@ export default function EventsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((event) => (
-                <tr
-                  key={event.id}
-                  className="event-row"
-                  onClick={() => setSelected(event)}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelected(event);
-                    }
-                  }}
-                >
-                  <td>
-                    <SeverityBadge severity={event.severity} raw={event.rawSeverity} />
-                  </td>
-                  <td>{event.title}</td>
-                  <td className="mono">{event.assetHostname || "—"}</td>
-                  <td className="mono">{event.sourceIp ?? "—"}</td>
-                  <td className="nowrap">{formatTimestamp(event)}</td>
-                </tr>
-              ))}
+              {filtered.map((event) => {
+                const status = statusOf(event);
+                return (
+                  <tr
+                    key={event.id}
+                    className="event-row"
+                    onClick={() => setSelected(event)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelected(event);
+                      }
+                    }}
+                  >
+                    <td>
+                      <SeverityBadge severity={event.severity} raw={event.rawSeverity} />
+                    </td>
+                    <td>
+                      <span className={`triage-chip triage-${status}`}>{TRIAGE_LABEL[status]}</span>
+                    </td>
+                    <td>{event.title}</td>
+                    <td className="mono">{event.assetHostname || "—"}</td>
+                    <td className="mono">{event.sourceIp ?? "—"}</td>
+                    <td className="nowrap">{formatTimestamp(event)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {selected && <EventDetail event={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <EventDetail
+          event={selected}
+          status={statusOf(selected)}
+          onSetStatus={(s) => triage.setStatus(selected.id, s)}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
