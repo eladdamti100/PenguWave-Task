@@ -1,159 +1,256 @@
-import { useState } from "react";
-import mockEvents from "../../data/mock_events.json";
-import { SecurityEvent } from "../types";
-import { sanitizeHtml } from "../utils";
+import { useMemo, useState } from "react";
+import type { Severity } from "../types";
+import { useEvents } from "../hooks/useEvents";
+import {
+  SEVERITY_ORDER,
+  compareSeverity,
+  formatTimestamp,
+  type NormalizedEvent,
+} from "../lib/events";
+import { toCsv, downloadFile, type CsvColumn } from "../utils";
+import Overview from "../components/Overview";
+import EventDetail from "../components/EventDetail";
+import SeverityBadge from "../components/SeverityBadge";
+
+type SortKey = "timestamp" | "severity" | "title" | "assetHostname";
+type SortDir = "asc" | "desc";
+
+const ALL_SEVERITIES = new Set<Severity>(SEVERITY_ORDER);
+
+const CSV_COLUMNS: CsvColumn<NormalizedEvent>[] = [
+  { header: "id", value: (e) => e.id },
+  { header: "timestamp", value: (e) => e.timestamp },
+  { header: "severity", value: (e) => e.rawSeverity },
+  { header: "title", value: (e) => e.title },
+  { header: "description", value: (e) => e.description },
+  { header: "assetHostname", value: (e) => e.assetHostname },
+  { header: "assetIp", value: (e) => e.assetIp },
+  { header: "sourceIp", value: (e) => e.sourceIp ?? "" },
+  { header: "userId", value: (e) => e.userId ?? "" },
+  { header: "tags", value: (e) => e.tags.join("; ") },
+];
 
 export default function EventsPage() {
+  const { events, loading, error } = useEvents();
+
   const [search, setSearch] = useState("");
-  const [severityFilter, setSeverityFilter] = useState("ALL");
-  const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
+  const [severityFilter, setSeverityFilter] = useState<Set<Severity>>(ALL_SEVERITIES);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("timestamp");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selected, setSelected] = useState<NormalizedEvent | null>(null);
 
-  const events = mockEvents as SecurityEvent[];
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const result = events.filter((e) => {
+      if (!severityFilter.has(e.severity)) return false;
+      if (tagFilter && !e.tags.includes(tagFilter)) return false;
+      if (!q) return true;
+      // Null-safe: every searched field is a guaranteed string on NormalizedEvent.
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.assetHostname.toLowerCase().includes(q) ||
+        (e.sourceIp ?? "").toLowerCase().includes(q) ||
+        e.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    });
 
-  const filtered = events.filter((e) => {
-    const matchesSearch =
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.description.toLowerCase().includes(search.toLowerCase()) ||
-      e.assetHostname.toLowerCase().includes(search.toLowerCase());
-    const matchesSeverity = severityFilter === "ALL" || e.severity === severityFilter;
-    return matchesSearch && matchesSeverity;
-  });
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...result].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "severity":
+          cmp = compareSeverity(a.severity, b.severity);
+          break;
+        case "title":
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case "assetHostname":
+          cmp = a.assetHostname.localeCompare(b.assetHostname);
+          break;
+        case "timestamp":
+          // Invalid/missing dates sort to the bottom regardless of direction.
+          if (!a.date && !b.date) cmp = 0;
+          else if (!a.date) return 1;
+          else if (!b.date) return -1;
+          else cmp = a.date.getTime() - b.date.getTime();
+          break;
+      }
+      return cmp * dir;
+    });
+  }, [events, search, severityFilter, tagFilter, sortKey, sortDir]);
 
-  const severityColor = (s: string) => {
-    if (s === "HIGH") return "red";
-    if (s === "MEDIUM") return "orange";
-    return "green";
+  const toggleSeverity = (sev: Severity) => {
+    setSeverityFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(sev)) next.delete(sev);
+      else next.add(sev);
+      // Never leave the table with zero severities selected — reset to all.
+      return next.size === 0 ? new Set(ALL_SEVERITIES) : next;
+    });
   };
+
+  const sortBy = (key: SortKey) => {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDir(key === "timestamp" || key === "severity" ? "desc" : "asc");
+    }
+  };
+
+  const sortIndicator = (key: SortKey) => (key === sortKey ? (sortDir === "asc" ? " ▲" : " ▼") : "");
+
+  const exportCsv = () => {
+    if (filtered.length === 0) return;
+    downloadFile(`penguwave_events_${filtered.length}.csv`, toCsv(filtered, CSV_COLUMNS), "text/csv;charset=utf-8");
+  };
+  const exportJson = () => {
+    if (filtered.length === 0) return;
+    downloadFile(`penguwave_events_${filtered.length}.json`, JSON.stringify(filtered, null, 2), "application/json");
+  };
+
+  const hasActiveFilters =
+    search.trim() !== "" || tagFilter !== null || severityFilter.size !== SEVERITY_ORDER.length;
+  const clearFilters = () => {
+    setSearch("");
+    setTagFilter(null);
+    setSeverityFilter(new Set(ALL_SEVERITIES));
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h1>Security Events</h1>
+        <p className="muted">Loading events…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container">
+        <h1>Security Events</h1>
+        <div className="banner banner-error">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
       <h1>Security Events</h1>
 
-      <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
+      <Overview
+        events={events}
+        onSelectSeverity={(sev) => setSeverityFilter(new Set([sev]))}
+        onSelectTag={(tag) => setTagFilter(tag)}
+      />
+
+      <div className="toolbar">
         <input
           type="text"
-          placeholder="Search events..."
+          className="search-input"
+          placeholder="Search title, description, host, IP, tag…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ width: "100%", maxWidth: 400 }}
         />
-        <select
-          value={severityFilter}
-          onChange={(e) => setSeverityFilter(e.target.value)}
-          style={{ width: 140 }}
-        >
-          <option value="ALL">All Severities</option>
-          <option value="HIGH">High</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="LOW">Low</option>
-        </select>
-      </div>
-
-      {search && (
-        <p>
-          <span
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml("Showing results for: <strong>" + search + "</strong>"),
-            }}
-          />
-          {" "}({filtered.length} events)
-        </p>
-      )}
-
-      <table>
-        <thead>
-          <tr>
-            <th>Severity</th>
-            <th>Title</th>
-            <th>Asset</th>
-            <th>Source IP</th>
-            <th>Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((event) => (
-            <tr
-              key={event.id}
-              onClick={() => setSelectedEvent(event)}
-              style={{ cursor: "pointer" }}
+        <div className="severity-toggles">
+          {SEVERITY_ORDER.map((sev) => (
+            <button
+              key={sev}
+              type="button"
+              className={`sev-toggle sev-${sev.toLowerCase()} ${severityFilter.has(sev) ? "on" : "off"}`}
+              aria-pressed={severityFilter.has(sev)}
+              onClick={() => toggleSeverity(sev)}
             >
-              <td style={{ color: severityColor(event.severity), fontWeight: 600 }}>
-                {event.severity}
-              </td>
-              <td>{event.title}</td>
-              <td style={{ fontFamily: "monospace", fontSize: 13 }}>
-                {event.assetHostname}
-              </td>
-              <td style={{ fontFamily: "monospace", fontSize: 13 }}>
-                {event.sourceIp}
-              </td>
-              <td style={{ fontSize: 13 }}>
-                {new Date(event.timestamp).toLocaleString()}
-              </td>
-            </tr>
+              {sev}
+            </button>
           ))}
-        </tbody>
-      </table>
-
-      {filtered.length === 0 && <p style={{ color: "#999" }}>No events found.</p>}
-
-      <div style={{ marginTop: 12 }}>
-        <button
-          onClick={() => {
-            const blob = new Blob([JSON.stringify(filtered, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "penguwave_events_export.json";
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-          style={{ fontSize: 13 }}
-        >
-          Export Events (JSON)
-        </button>
+        </div>
+        <div className="toolbar-actions">
+          <button onClick={exportCsv} disabled={filtered.length === 0}>
+            Export CSV
+          </button>
+          <button onClick={exportJson} disabled={filtered.length === 0}>
+            Export JSON
+          </button>
+        </div>
       </div>
 
-      {/* Inline event detail */}
-      {selectedEvent && (
-        <div className="event-detail">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2>{selectedEvent.title}</h2>
-            <button onClick={() => setSelectedEvent(null)} style={{ cursor: "pointer" }}>
-              Close
+      <div className="result-meta">
+        <span>
+          {filtered.length} of {events.length} events
+        </span>
+        {tagFilter && (
+          <button className="filter-pill" onClick={() => setTagFilter(null)}>
+            tag: {tagFilter} ✕
+          </button>
+        )}
+        {hasActiveFilters && (
+          <button className="link-btn" onClick={clearFilters}>
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state">
+          <p>No events match your filters.</p>
+          {hasActiveFilters && (
+            <button className="link-btn" onClick={clearFilters}>
+              Clear filters
             </button>
-          </div>
-          <p>
-            <strong>Severity:</strong>{" "}
-            <span style={{ color: severityColor(selectedEvent.severity) }}>
-              {selectedEvent.severity}
-            </span>
-          </p>
-          <p>
-            <strong>Description:</strong>
-          </p>
-          {/* render rich text descriptions */}
-          <div
-            ref={(el) => {
-              if (el) el.innerHTML = sanitizeHtml(selectedEvent.description);
-            }}
-          />
-          <p>
-            <strong>Asset:</strong> {selectedEvent.assetHostname} ({selectedEvent.assetIp})
-          </p>
-          <p>
-            <strong>Source IP:</strong> {selectedEvent.sourceIp}
-          </p>
-          <p>
-            <strong>Tags:</strong> {selectedEvent.tags.join(", ")}
-          </p>
-          <p>
-            <strong>Timestamp:</strong> {new Date(selectedEvent.timestamp).toLocaleString()}
-          </p>
-          <h3>Raw Event Data</h3>
-          <pre>{JSON.stringify(selectedEvent, null, 2)}</pre>
+          )}
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th className="sortable" onClick={() => sortBy("severity")}>
+                  Severity{sortIndicator("severity")}
+                </th>
+                <th className="sortable" onClick={() => sortBy("title")}>
+                  Title{sortIndicator("title")}
+                </th>
+                <th className="sortable" onClick={() => sortBy("assetHostname")}>
+                  Asset{sortIndicator("assetHostname")}
+                </th>
+                <th>Source IP</th>
+                <th className="sortable" onClick={() => sortBy("timestamp")}>
+                  Timestamp{sortIndicator("timestamp")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((event) => (
+                <tr
+                  key={event.id}
+                  className="event-row"
+                  onClick={() => setSelected(event)}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(event);
+                    }
+                  }}
+                >
+                  <td>
+                    <SeverityBadge severity={event.severity} raw={event.rawSeverity} />
+                  </td>
+                  <td>{event.title}</td>
+                  <td className="mono">{event.assetHostname || "—"}</td>
+                  <td className="mono">{event.sourceIp ?? "—"}</td>
+                  <td className="nowrap">{formatTimestamp(event)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
+
+      {selected && <EventDetail event={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
