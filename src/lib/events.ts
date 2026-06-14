@@ -125,3 +125,61 @@ export function formatTimestamp(event: Pick<NormalizedEvent, "date" | "timestamp
   if (event.date) return event.date.toLocaleString();
   return event.timestamp ? `Invalid date (${event.timestamp})` : "—";
 }
+
+// --- SOC operational selectors ---
+
+/** The most recent valid event time — our "now" reference for relative windows. */
+export function latestDate(events: NormalizedEvent[]): Date | null {
+  let latest: Date | null = null;
+  for (const e of events) {
+    if (e.date && (!latest || e.date > latest)) latest = e.date;
+  }
+  return latest;
+}
+
+/** Count events within `hours` before the reference time (default: latest event). */
+export function countWithinHours(events: NormalizedEvent[], hours: number, ref?: Date | null): number {
+  const end = ref ?? latestDate(events);
+  if (!end) return 0;
+  const start = end.getTime() - hours * 3600_000;
+  return events.filter((e) => e.date && e.date.getTime() > start && e.date.getTime() <= end.getTime()).length;
+}
+
+const PRIVATE_RE = /^(10\.|192\.168\.|127\.|172\.(1[6-9]|2\d|3[0-1])\.)/;
+
+/** External (non-RFC1918, valid IPv4) source — i.e. a potential outside attacker. */
+export function isExternalIp(ip: string | null): boolean {
+  return !!ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && !PRIVATE_RE.test(ip);
+}
+
+/** Most active external source IPs ("top talkers"), with their worst severity. */
+export function topAttackers(events: NormalizedEvent[], limit = 5): { ip: string; count: number; worst: Severity }[] {
+  const map = new Map<string, { count: number; worst: Severity }>();
+  for (const e of events) {
+    if (!isExternalIp(e.sourceIp)) continue;
+    const ip = e.sourceIp as string;
+    const cur = map.get(ip);
+    if (cur) {
+      cur.count++;
+      if (compareSeverity(e.severity, cur.worst) < 0) cur.worst = e.severity;
+    } else {
+      map.set(ip, { count: 1, worst: e.severity });
+    }
+  }
+  return [...map.entries()]
+    .map(([ip, v]) => ({ ip, ...v }))
+    .sort((a, b) => b.count - a.count || compareSeverity(a.worst, b.worst))
+    .slice(0, limit);
+}
+
+/** Compact relative time ("3h ago", "2d ago") against the latest-event reference. */
+export function relativeTime(date: Date | null, ref: Date | null): string {
+  if (!date || !ref) return "—";
+  const diff = ref.getTime() - date.getTime();
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}

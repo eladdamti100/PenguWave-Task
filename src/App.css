@@ -192,6 +192,72 @@ code { font-family: ui-monospace, Menlo, monospace; background: var(--accent-sof
   color: #9aa6c4; font-size: 13px;
 }
 
+/* ---------- SOC overview ---------- */
+.section-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin: 30px 0 14px; }
+
+.posture {
+  display: flex; align-items: center; gap: 14px; padding: 13px 18px; border-radius: 12px;
+  border: 1px solid var(--border); margin-bottom: 16px; font-size: 14px;
+}
+.posture strong { font-size: 15px; }
+.posture .muted { color: inherit; opacity: 0.75; }
+.posture .btn-primary { margin-left: auto; }
+.posture-critical { background: var(--sev-critical-bg); border-color: var(--sev-critical-border); color: var(--sev-critical); }
+.posture-high { background: var(--sev-high-bg); border-color: var(--sev-high-border); color: var(--sev-high); }
+.posture-ok { background: color-mix(in srgb, var(--ok) 12%, transparent); border-color: color-mix(in srgb, var(--ok) 30%, transparent); color: var(--ok); }
+.posture-pulse { width: 10px; height: 10px; border-radius: 50%; background: currentColor; animation: pulse 1.8s ease-out infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); }
+  70% { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.soc-tile { font: inherit; color: var(--text); }
+.soc-tile.tone-critical::before { background: var(--sev-critical); }
+.soc-tile.tone-critical .kpi-count { color: var(--sev-critical); }
+.soc-tile.tone-high::before { background: var(--sev-high); }
+.soc-tile.tone-high .kpi-count { color: var(--sev-high); }
+.soc-tile.tone-accent::before { background: var(--accent); }
+.soc-tile.tone-accent .kpi-count { color: var(--accent-text); }
+.soc-tile.tone-ok::before { background: var(--ok); }
+.soc-tile.tone-ok .kpi-count { color: var(--ok); }
+.soc-tile.tone-muted::before { background: var(--muted); }
+.kpi-trend { font-size: 10.5px; font-weight: 600; margin-top: 2px; }
+.kpi-trend.up { color: var(--sev-high); }
+.kpi-trend.down { color: var(--ok); }
+
+.soc-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 12px; margin-top: 16px; }
+.soc-side { display: flex; flex-direction: column; gap: 12px; }
+
+.triage-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.triage-head h3 { margin: 0; }
+.triage-list { list-style: none; display: flex; flex-direction: column; }
+.triage-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.triage-item:last-child { border-bottom: none; }
+.triage-main { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; background: none; border: none; cursor: pointer; text-align: left; padding: 0; color: var(--text); font: inherit; }
+.triage-title { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.triage-main:hover .triage-title { color: var(--accent-text); }
+.triage-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.triage-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.triage-foot { font-size: 11px; margin-top: 12px; }
+
+.triage-chip { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.03em; border: 1px solid transparent; white-space: nowrap; }
+.triage-new { color: var(--sev-high); background: var(--sev-high-bg); border-color: var(--sev-high-border); }
+.triage-ack { color: var(--accent-text); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.triage-resolved { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+
+.attacker-ip { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; color: var(--text); padding: 0; font: inherit; }
+.attacker-ip:hover .mono { color: var(--accent-text); }
+
+.status-select { width: auto; margin: 0; min-width: 150px; }
+
+.triage-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); margin-bottom: 10px; }
+.triage-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 880px) {
+  .soc-grid { grid-template-columns: 1fr; }
+}
+
 /* ---------- Overview ---------- */
 .overview { margin: 18px 0 26px; }
 .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 14px; }

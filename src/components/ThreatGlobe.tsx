@@ -5,6 +5,7 @@ import { SEVERITY_ORDER, type NormalizedEvent } from "../lib/events";
 
 interface ThreatGlobeProps {
   events: NormalizedEvent[];
+  subtitle?: string;
 }
 
 const GLOBE_HEIGHT = 440;
@@ -13,7 +14,7 @@ const GLOBE_HEIGHT = 440;
  * 3D threat map: a rotating globe with glowing arcs from attack source IPs to HQ,
  * colored by severity. Geo is approximate/demo (see src/lib/geo.ts).
  */
-export default function ThreatGlobe({ events }: ThreatGlobeProps) {
+export default function ThreatGlobe({ events, subtitle }: ThreatGlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800);
@@ -46,7 +47,7 @@ export default function ThreatGlobe({ events }: ThreatGlobeProps) {
       <div className="globe-head">
         <div>
           <h3>Global Threat Map</h3>
-          <p className="muted globe-sub">External attack sources → assets, by severity</p>
+          <p className="muted globe-sub">{subtitle ?? "Attack sources → assets, by severity"}</p>
         </div>
         <div className="globe-legend">
           {SEVERITY_ORDER.map((sev) => (
