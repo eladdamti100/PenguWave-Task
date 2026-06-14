@@ -207,7 +207,18 @@ function TriageQueue({
     <div className="panel triage-panel">
       <div className="triage-head">
         <h3>Triage queue</h3>
-        <span className="muted">{triage.counts.open} open</span>
+        <div className="triage-head-right">
+          <span className="muted">{triage.counts.open} open</span>
+          <button
+            className="link-btn"
+            onClick={() => {
+              if (window.confirm("Reset all triage? Every event returns to its starting open state.")) triage.reset();
+            }}
+            title="Re-open everything you acknowledged or resolved"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
       {queue.length === 0 ? (
         <div className="empty-state" style={{ padding: 32 }}>

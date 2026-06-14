@@ -34,6 +34,7 @@ function readOverrides(): Record<string, TriageStatus> {
 export interface TriageApi {
   statusOf: (event: NormalizedEvent) => TriageStatus;
   setStatus: (id: string, status: TriageStatus) => void;
+  reset: () => void;
   counts: { new: number; ack: number; resolved: number; open: number };
 }
 
@@ -58,6 +59,16 @@ export function useTriage(events: NormalizedEvent[]): TriageApi {
     });
   }, []);
 
+  // Clear all analyst overrides → every event reverts to its seeded status.
+  const reset = useCallback(() => {
+    setOverrides({});
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const counts = useMemo(() => {
     let n = 0;
     let a = 0;
@@ -71,5 +82,5 @@ export function useTriage(events: NormalizedEvent[]): TriageApi {
     return { new: n, ack: a, resolved: r, open: n + a };
   }, [events, overrides]);
 
-  return { statusOf, setStatus, counts };
+  return { statusOf, setStatus, reset, counts };
 }

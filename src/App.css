@@ -231,6 +231,7 @@ code { font-family: ui-monospace, Menlo, monospace; background: var(--accent-sof
 
 .triage-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .triage-head h3 { margin: 0; }
+.triage-head-right { display: flex; align-items: center; gap: 12px; }
 .triage-list { list-style: none; display: flex; flex-direction: column; }
 .triage-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .triage-item:last-child { border-bottom: none; }
