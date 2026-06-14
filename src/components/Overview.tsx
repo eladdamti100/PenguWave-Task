@@ -35,10 +35,9 @@ export default function Overview({
   onOpenEvent,
 }: OverviewProps) {
   const ref = latestDate(events);
-  // The globe focuses on active high-priority threats only.
-  const globeEvents = events.filter(
-    (e) => (e.severity === "CRITICAL" || e.severity === "HIGH") && triage.statusOf(e) !== "resolved"
-  );
+  // The globe mirrors the open triage queue: every event that isn't resolved.
+  // It updates live as analysts acknowledge/resolve events.
+  const globeEvents = events.filter((e) => triage.statusOf(e) !== "resolved");
   const openCritical = events.filter((e) => e.severity === "CRITICAL" && triage.statusOf(e) !== "resolved").length;
   const openHigh = events.filter((e) => e.severity === "HIGH" && triage.statusOf(e) !== "resolved").length;
   const last24 = countWithinHours(events, 24, ref);
@@ -60,10 +59,13 @@ export default function Overview({
 
       {globeEvents.length > 0 ? (
         <Suspense fallback={<div className="globe-card globe-loading">Initializing threat map…</div>}>
-          <ThreatGlobe events={globeEvents} subtitle="Open critical & high — attack sources → assets" />
+          <ThreatGlobe
+            events={globeEvents}
+            subtitle={`${globeEvents.length} open event${globeEvents.length === 1 ? "" : "s"} — live attack sources → assets`}
+          />
         </Suspense>
       ) : (
-        <div className="globe-card globe-loading">🎉 No open critical or high-severity threats to map.</div>
+        <div className="globe-card globe-loading">🎉 No open threats — the queue is clear.</div>
       )}
 
       <div className="soc-grid">
