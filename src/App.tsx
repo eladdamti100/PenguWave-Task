@@ -1,43 +1,45 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import LoginModal from "./components/LoginModal";
 import EventsPage from "./pages/EventsPage";
 import UsersPage from "./pages/UsersPage";
 import NotFound from "./pages/NotFound";
-
-// Skip the login modal during local development.
-const DEBUG_BYPASS_AUTH = false;
+import { useAuth } from "./auth/AuthContext";
 
 function App() {
+  const { user, isAdmin, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-
-  // Show login modal on first visit
-  useEffect(() => {
-    if (DEBUG_BYPASS_AUTH) return;
-    const dismissed = sessionStorage.getItem("login-dismissed");
-    if (!dismissed) {
-      setShowLogin(true);
-    }
-  }, []);
-
-  const handleCloseLogin = () => {
-    sessionStorage.setItem("login-dismissed", "true");
-    setShowLogin(false);
-  };
 
   return (
     <>
-      <Navbar onLoginClick={() => setShowLogin(true)} />
+      <Navbar
+        user={user}
+        isAdmin={isAdmin}
+        onLoginClick={() => setShowLogin(true)}
+        onLogout={logout}
+      />
       <div className="container">
-        <Routes>
-          <Route path="/" element={<Navigate to="/events" replace />} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        {!user ? (
+          <div className="signin-gate">
+            <h1>Welcome to PenguWave 🐧</h1>
+            <p className="muted">Sign in to view the security operations dashboard.</p>
+            <button className="btn-primary" onClick={() => setShowLogin(true)}>
+              Sign In
+            </button>
+          </div>
+        ) : (
+          <Routes>
+            <Route path="/" element={<Navigate to="/events" replace />} />
+            <Route path="/events" element={<EventsPage />} />
+            {/* User management is admin-only. Non-admins are redirected away.
+                This is a UX guard; the backend must enforce the real boundary. */}
+            <Route path="/users" element={isAdmin ? <UsersPage /> : <Navigate to="/events" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        )}
       </div>
-      {showLogin && <LoginModal onClose={handleCloseLogin} />}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </>
   );
 }
