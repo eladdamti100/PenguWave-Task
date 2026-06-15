@@ -4,6 +4,9 @@ A security-operations dashboard for an analyst working through security events.
 Built on the PenguWave starter; this branch turns the bare starter into a usable,
 robust, and hardened SOC dashboard.
 
+**Live demo:** https://pengu-wave-task-two.vercel.app
+(sign in with `admin@penguwave.io` / `admin123`, or use **Continue as guest** for read-only).
+
 ## Run it
 
 ```bash
